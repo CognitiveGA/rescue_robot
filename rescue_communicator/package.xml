@@ -3,7 +3,7 @@
 <package format="3">
   <name>rescue_communicator</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Communicator subsystem for TIAGo Rescue Robot</description>
   <maintainer email="shadyrafat60@gmail.com">shady</maintainer>
   <license>TODO: License declaration</license>
 

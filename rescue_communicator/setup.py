@@ -16,7 +16,7 @@ setup(
     zip_safe=True,
     maintainer='shady',
     maintainer_email='shadyrafat60@gmail.com',
-    description='TODO: Package description',
+    description='Communicator subsystem for TIAGo Search & Rescue Robot',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
