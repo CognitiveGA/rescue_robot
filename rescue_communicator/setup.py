@@ -10,7 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/communicator_launch.py']),
+        ('share/' + package_name + '/launch', ['launch/communicator_launch.py', 'launch/test_triage_to_audioout_launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
