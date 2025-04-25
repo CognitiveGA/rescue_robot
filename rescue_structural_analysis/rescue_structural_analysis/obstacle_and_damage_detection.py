@@ -10,11 +10,11 @@ class ObstacleAndDamageDetection:
     def detect(self, structure_data):
         print(f"[{self.module_name}] Scanning structure data for debris and damage...")
 
-        point_cloud = structure_data.get("point_cloud", [])
-        infrared_pattern = structure_data.get("infrared_intensity", random.uniform(0.2, 0.8))
+        point_cloud_frame = structure_data.get("point_cloud", "unknown_frame")
+        infrared_pattern = structure_data.get("infrared_intensity", 0.5)
 
-        # Simulate damage detection
-        obstacle_chance = len(point_cloud) * 0.01 + infrared_pattern * 0.5
+        # Simulated obstacle chance based on sensor data quality
+        obstacle_chance = 0.2 + infrared_pattern * 0.5
         is_obstacle = obstacle_chance > self.detection_sensitivity
 
         result = {
@@ -22,7 +22,7 @@ class ObstacleAndDamageDetection:
             "obstacle_detected": is_obstacle,
             "obstacle_count_estimate": int(obstacle_chance * 10) if is_obstacle else 0,
             "infrared_intensity": infrared_pattern,
-            "point_count": len(point_cloud)
+            "sensor_frame": point_cloud_frame
         }
 
         if is_obstacle:
