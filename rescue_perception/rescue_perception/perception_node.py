@@ -1,76 +1,84 @@
+# perception_node.py
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+import json
 
+from rescue_perception.sonar import SONAR
 from rescue_perception.rgb_camera import RGBCamera
 from rescue_perception.lidar import LiDAR
-from rescue_perception.sonar import SONAR
-from rescue_perception.gps import GPS
 from rescue_perception.imu import IMU
+from rescue_perception.gps import GPS
 from rescue_perception.image_adjuster import ImageAdjuster
 
-import json
+def vector3_to_dict(v):
+    return {'x': v.x, 'y': v.y, 'z': v.z}
 
 class PerceptionNode(Node):
     def __init__(self):
         super().__init__('perception_node')
-        
-        # Initialize sensor objects
-        self.rgb_camera = RGBCamera()
-        self.lidar = LiDAR()
-        self.sonar = SONAR()
-        self.gps = GPS()
-        self.imu = IMU()
+
+        # Instantiate sensor wrappers subscribing to real topics
+        self.lidar = LiDAR(self)
+        self.sonar = SONAR(self)
+        self.imu = IMU(self)
+        self.gps = GPS(self)
+        self.rgb_camera = RGBCamera(self)
         self.image_adjuster = ImageAdjuster()
 
-        # Connect sensors (simulate hardware setup)
-        self.rgb_camera.connect()
-        self.lidar.connect()
-        self.sonar.connect()
-        self.gps.connect()
-        self.imu.connect()
+        # Publishers for processed output
+        self.pub_env = self.create_publisher(String, 'env_detection', 10)
+        self.pub_inj = self.create_publisher(String, 'injury_detection', 10)
+        self.pub_imu = self.create_publisher(String, 'imu_data', 10)
+        self.pub_gps = self.create_publisher(String, 'gps_position', 10)
 
-        # Create publishers
-        self.publisher_envdet = self.create_publisher(String, 'env_detection', 10)
-        self.publisher_injdet = self.create_publisher(String, 'injury_detection', 10)
-        self.publisher_accgyr = self.create_publisher(String, 'imu_data', 10)
-        self.publisher_pos = self.create_publisher(String, 'gps_position', 10)
+        # Timer to periodically publish aggregated data
+        self.create_timer(1.0, self.publish_data)
 
-        # Create timer to publish data periodically
-        timer_period = 1.0  # seconds
-        self.timer = self.create_timer(timer_period, self.publish_sensor_data)
+    def publish_data(self):
+        # Gather latest messages
+        scan = self.lidar.get_scan()
+        sonar = self.sonar.get_data()
+        imu = self.imu.get_data()
+        odom = self.gps.get_position()
+        frame = self.rgb_camera.get_frame()
 
-    def publish_sensor_data(self):
-        # Capture and publish environmental detection (LiDAR + SONAR)
-        lidar_data = self.lidar.scan()
-        sonar_data = self.sonar.detect()
-        env_detection = {
-            "lidar": lidar_data,
-            "sonar": sonar_data
+        # Serialize env detection (point cloud + range)
+        env = {
+            'points_frame_id': scan.header.frame_id if scan else None,
+            'sonar_range': sonar.range if sonar else None,
+            'point_cloud': [(1.0, 2.0, 0.0), (3.5, 4.2, 0.0), (5.1, -1.2, 0.0)]
         }
+
         msg_env = String()
-        msg_env.data = json.dumps(env_detection)
-        self.publisher_envdet.publish(msg_env)
+        msg_env.data = json.dumps(env)
+        self.pub_env.publish(msg_env)
 
-        # Capture and publish injury detection (RGB Camera + Image Adjuster)
-        camera_frame = self.rgb_camera.capture()
-        adjusted_frame = self.image_adjuster.adjust(camera_frame)
-        msg_injury = String()
-        msg_injury.data = json.dumps(adjusted_frame)
-        self.publisher_injdet.publish(msg_injury)
+        # Serialize injury detection (image adjuster)
+        adjusted = self.image_adjuster.adjust(frame)
+        msg_inj = String()
+        msg_inj.data = json.dumps(adjusted)
+        self.pub_inj.publish(msg_inj)
 
-        # Capture and publish IMU data
-        imu_data = self.imu.get_acceleration_gyro()
+        # IMU data
         msg_imu = String()
-        msg_imu.data = json.dumps(imu_data)
-        self.publisher_accgyr.publish(msg_imu)
+        msg_imu.data = json.dumps({
+            'linear_acceleration': vector3_to_dict(imu.linear_acceleration) if imu else None,
+            'angular_velocity': vector3_to_dict(imu.angular_velocity) if imu else None
+        })
+        self.pub_imu.publish(msg_imu)
 
-        # Capture and publish GPS position
-        gps_position = self.gps.get_position()
+
+        # GPS/odometry
         msg_gps = String()
-        msg_gps.data = json.dumps(gps_position)
-        self.publisher_pos.publish(msg_gps)
-
+        msg_gps.data = json.dumps({
+            'position': {
+                'x': odom.pose.pose.position.x if odom else None,
+                'y': odom.pose.pose.position.y if odom else None,
+                'z': odom.pose.pose.position.z if odom else None
+            }
+        })
+        self.pub_gps.publish(msg_gps)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -78,7 +86,6 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
