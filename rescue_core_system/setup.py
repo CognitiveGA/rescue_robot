@@ -5,12 +5,12 @@ package_name = 'rescue_core_system'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
+    packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/core_system_launch.py']),
+        ('share/' + package_name + '/launch', ['launch/core_system_launch.py', 'launch/test_perception_core_launch.py', 'launch/test_full_system_launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
