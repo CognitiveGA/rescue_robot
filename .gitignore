@@ -1,5 +1,6 @@
 classes.py
 __pycache__
+__pycache__/*
 /*/__pycache__
 /*/*/__pycache__
 /*/test/__pycache__
