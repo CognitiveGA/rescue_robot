@@ -14,7 +14,11 @@ class ObstacleAndDamageDetection:
         infrared_pattern = structure_data.get("infrared_intensity", 0.5)
 
         # Simulated obstacle chance based on sensor data quality
+        if infrared_pattern is None:
+            infrared_pattern = 0.0  # Default safe value
+
         obstacle_chance = 0.2 + infrared_pattern * 0.5
+
         is_obstacle = obstacle_chance > self.detection_sensitivity
 
         result = {
